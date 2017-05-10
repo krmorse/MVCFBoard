@@ -27,7 +27,7 @@
         config: {
             defaultSettings: {
                 type: 'HierarchicalRequirement',
-                groupByField: 'c_ReposAffected',
+                groupByField: '',
                 showRows: false
             }
         },
