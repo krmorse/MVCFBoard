@@ -27,7 +27,7 @@
         config: {
             defaultSettings: {
                 type: 'HierarchicalRequirement',
-                groupByField: '',
+                groupByField: 'ScheduleState',
                 showRows: false
             }
         },
@@ -49,9 +49,13 @@
             var field = this.model.getField(this.getSetting('groupByField'));
             field.getAllowedValueStore().load({
                 callback: function(records) {
-                    this.columns = _.compact(_.map(records, function(record) {
+                    var columns = _.map(records, function(record) {
                         return record.get('StringValue');
-                    }));
+                    });
+                    if (field.isMultiValueCustom()) {
+                        columns = _.compact(columns);
+                    }
+                    this.columns = columns;
                     this._addBoard();
                 },
                 scope: this
@@ -184,10 +188,11 @@
                     }
                 },
                 columns: _.map(this.columns, function(col) {
+                    var header = col || 'None';
                     return { 
                         value: col,
                         columnHeaderConfig: {
-                            headerData: {value: col}
+                            headerData: {value: header}
                         } 
                     };
                 })

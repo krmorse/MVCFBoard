@@ -333,21 +333,33 @@
     alias: 'widget.collectioncolumn',
 
     getStoreFilter: function() {
-        return [
-            {
-                property: this.attribute,
-                operator: 'contains',
-                value: this.value
-            }
-        ];
+        if (this._isCollectionField()) {
+            return [
+                {
+                    property: this.attribute,
+                    operator: 'contains',
+                    value: this.value
+                }
+            ];
+        } else {
+            return this.callParent(arguments);
+        }
     },
 
     isMatchingRecord: function(record) {
-        var value = record.get(this.attribute),
-          values = (value && value._tagsNameArray) || [];
-        
-        return (!this.value && !values.length) ||
-          _.contains(_.pluck(values, 'Name'), this.value);
+        if (this._isCollectionField()) {
+            var value = record.get(this.attribute),
+            values = (value && value._tagsNameArray) || [];
+            
+            return (!this.value && !values.length) ||
+            _.contains(_.pluck(values, 'Name'), this.value);
+        } else {
+            return this.callParent(arguments);
+        }
+    },
+
+    _isCollectionField: function() {
+        return !!this.store.model.getField(this.attribute).isMultiValueCustom();
     }
 });
                 (function () {
@@ -379,7 +391,7 @@
         config: {
             defaultSettings: {
                 type: 'HierarchicalRequirement',
-                groupByField: '',
+                groupByField: 'ScheduleState',
                 showRows: false
             }
         },
@@ -401,9 +413,13 @@
             var field = this.model.getField(this.getSetting('groupByField'));
             field.getAllowedValueStore().load({
                 callback: function(records) {
-                    this.columns = _.compact(_.map(records, function(record) {
+                    var columns = _.map(records, function(record) {
                         return record.get('StringValue');
-                    }));
+                    });
+                    if (field.isMultiValueCustom()) {
+                        columns = _.compact(columns);
+                    }
+                    this.columns = columns;
                     this._addBoard();
                 },
                 scope: this
@@ -536,10 +552,11 @@
                     }
                 },
                 columns: _.map(this.columns, function(col) {
+                    var header = col || 'None';
                     return { 
                         value: col,
                         columnHeaderConfig: {
-                            headerData: {value: col}
+                            headerData: {value: header}
                         } 
                     };
                 })
