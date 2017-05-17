@@ -27,7 +27,7 @@
         config: {
             defaultSettings: {
                 type: 'HierarchicalRequirement',
-                groupByField: 'Milestones',
+                groupByField: 'ScheduleState',
                 showRows: false
             }
         },
@@ -229,7 +229,6 @@
                 storeConfig: {
                     sorters: Rally.data.util.Sorter.sorters(this.getSetting('order'))
                 },
-                readOnly: true,
                 columnConfig: {
                     xtype: 'collectioncolumn',
                     fields: (this.getSetting('fields') &&
