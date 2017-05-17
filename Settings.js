@@ -77,7 +77,7 @@
                                 var field = record.get('fieldDefinition'),
                                     attr = field.attributeDefinition;
                                 return attr && !attr.ReadOnly && !attr.Hidden && attr.Constrained && 
-                                    (attr.AttributeType !== 'COLLECTION' || attr.Custom) &&
+                                    (attr.AttributeType !== 'COLLECTION' || attr.Custom || attr.Name === 'Milestones') &&
                                     (!attr.AllowedValueType || attr.AllowedValueType._refObjectName !== 'User') &&
                                     !_.contains(['Iteration', 'Release', 'Project'], attr.Name) &&
                                     !field.isMappedFromArtifact;
