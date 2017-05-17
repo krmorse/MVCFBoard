@@ -46,20 +46,71 @@
         },
 
         _loadColumns: function() {
-            var field = this.model.getField(this.getSetting('groupByField'));
-            field.getAllowedValueStore().load({
-                callback: function(records) {
-                    var columns = _.map(records, function(record) {
-                        return record.get('StringValue');
-                    });
-                    if (field.isMultiValueCustom()) {
-                        columns = _.compact(columns);
+            var groupByField = this.getSetting('groupByField');
+            
+            if (groupByField === 'Milestones') {
+                var timeboxScope = this.getContext().getTimeboxScope();
+                if (!timeboxScope || timeboxScope.getType() === 'milestone') {
+                    Rally.ui.notify.Notifier.showError({ message: 'This app must be scoped to a valid timebox.'});
+                    return;
+                }
+
+                Ext.create('Rally.data.wsapi.Store', {
+                    model: 'Milestone',
+                    filters: [
+                        {
+                            property: 'TargetDate',
+                            operator: '>=',
+                            value: timeboxScope.getStartDate()
+                        },
+                        {
+                            property: 'TargetDate',
+                            operator: '<=',
+                            value: timeboxScope.getEndDate()
+                        },
+                        Rally.data.wsapi.Filter.or([
+                            {
+                                property: 'Projects',
+                                operator: 'contains',
+                                value: this.getContext().getProjectRef()
+                            },
+                            {
+                                property: 'Projects.ObjectID',
+                                value: null
+                            }
+                        ])
+                    ],
+                    autoLoad: true,
+                    listeners: {
+                        load: function(store, records) {
+                            var columns = [null];
+                            this.columns = columns.concat(_.map(records, function(record) {
+                                return {
+                                    value: record.get('_ref'),
+                                    displayValue: record.get('_refObjectName')
+                                };
+                            }));
+                            this._addBoard();
+                        },
+                        scope: this
                     }
-                    this.columns = columns;
-                    this._addBoard();
-                },
-                scope: this
-            });
+                });
+            } else {
+                var field = this.model.getField(groupByField);
+                field.getAllowedValueStore().load({
+                    callback: function(records) {
+                        var columns = _.map(records, function(record) {
+                            return record.get('StringValue');
+                        });
+                        if (field.isMultiValueCustom()) {
+                            columns = _.compact(columns);
+                        }
+                        this.columns = columns;
+                        this._addBoard();
+                    },
+                    scope: this
+                });
+            }
         },
 
         _getGridBoardConfig: function () {
@@ -178,21 +229,27 @@
                 storeConfig: {
                     sorters: Rally.data.util.Sorter.sorters(this.getSetting('order'))
                 },
-                readOnly: true,
                 columnConfig: {
                     xtype: 'collectioncolumn',
                     fields: (this.getSetting('fields') &&
                         this.getSetting('fields').split(',')) || [],
                     columnHeaderConfig: {
-                        headerTpl: '{value}'
+                        headerTpl: '{displayValue}'
                     }
                 },
                 columns: _.map(this.columns, function(col) {
-                    var header = col || 'None';
+                    var value = col,
+                        header = col || 'None';
+                        if (col && col.value) {
+                            value = col.value;
+                        }
+                        if (col && col.displayValue) {
+                            header = col.displayValue;
+                        }
                     return { 
-                        value: col,
+                        value: value,
                         columnHeaderConfig: {
-                            headerData: {value: header}
+                            headerData: {displayValue: header}
                         } 
                     };
                 })
